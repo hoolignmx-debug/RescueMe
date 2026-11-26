@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incident Details - EMS Response</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text"><strong>EMS Response</strong><small>Emergency Medical SOS &middot; Member 3</small></span>
+      </a>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+      <nav class="nav" id="main-nav" aria-label="Main navigation">
+        <a class="nav-link" href="index.html">EMS Dashboard</a>
+        <a class="nav-link active" href="incident.html" data-incident-link>Incidents</a>
+        <a class="nav-link" href="ambulance.html" data-incident-link>Ambulances</a>
+        <a class="nav-link" href="tracking.html" data-incident-link>Tracking</a>
+        <a class="nav-link" href="notification.html" data-incident-link>Notifications</a>
+        <a class="nav-link" href="hospital.html" data-incident-link>Hospitals</a>
+      </nav>
+      <span class="mode-pill" id="mode-pill"></span>
+    </div>
+  </header>
+  <div class="demo-banner" id="demo-banner"></div>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1>Incident Details</h1>
+        <p class="page-sub">Patient summary, emergency timeline and response actions for one incident.</p>
+      </div>
+      <div class="page-actions">
+        <a class="btn btn-outline" href="index.html">&larr; Dashboard</a>
+      </div>
+    </div>
+
+    <div class="context-bar">
+      <label for="incident-select">Incident</label>
+      <select class="select" id="incident-select" aria-label="Choose an incident">
+        <option value="">Loading incidents&hellip;</option>
+      </select>
+    </div>
+
+    <div id="page-alert"></div>
+
+    <div id="incident-view">
+      <div class="loading-line"><span class="spinner"></span> Loading incident&hellip;</div>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/incident.js"></script>
+</body>
+</html>

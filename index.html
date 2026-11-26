@@ -1,14 +1,141 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex, nofollow" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>ER Dashboard · Emergency SOS Medical Handoff (Prototype)</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMS Response Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text"><strong>EMS Response</strong><small>Emergency Medical SOS &middot; Member 3</small></span>
+      </a>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+      <nav class="nav" id="main-nav" aria-label="Main navigation">
+        <a class="nav-link active" href="index.html">EMS Dashboard</a>
+        <a class="nav-link" href="incident.html" data-incident-link>Incidents</a>
+        <a class="nav-link" href="ambulance.html" data-incident-link>Ambulances</a>
+        <a class="nav-link" href="tracking.html" data-incident-link>Tracking</a>
+        <a class="nav-link" href="notification.html" data-incident-link>Notifications</a>
+        <a class="nav-link" href="hospital.html" data-incident-link>Hospitals</a>
+      </nav>
+      <span class="mode-pill" id="mode-pill"></span>
+    </div>
+  </header>
+  <div class="demo-banner" id="demo-banner"></div>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1>EMS Response Dashboard</h1>
+        <p class="page-sub">Verified emergencies are dispatched automatically. Use this dashboard to monitor, intervene, reassign or override.</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-outline" id="refresh-btn" type="button">Refresh</button>
+        <button class="btn btn-ghost-danger" id="reset-btn" type="button" hidden>Reset demo data</button>
+      </div>
+    </div>
+
+    <div id="page-alert"></div>
+
+    <!-- ===== AUTOMATION: AI-assisted EMS response (monitoring + manual override) ===== -->
+    <section id="automation-panel" aria-labelledby="automation-title">
+      <h2 id="automation-title" class="sr-only" style="position:absolute;left:-9999px">Automated EMS response</h2>
+      <div class="auto-banner" id="auto-banner"></div>
+      <div class="auto-chips" id="auto-chips" aria-label="Automation status"></div>
+
+      <div class="auto-focus-bar">
+        <label for="auto-focus">Emergency shown below</label>
+        <select class="select" id="auto-focus" aria-label="Choose the emergency to monitor"></select>
+        <label class="check-row" id="demo-fail-row" hidden>
+          <input type="checkbox" id="demo-fail-toggle"> DEMO: make the next automatic notification fail
+        </label>
+      </div>
+
+      <div class="auto-grid">
+        <div class="stack">
+          <section class="card"><div class="card-head"><h2>Current emergency</h2><span id="auto-mode-badge"></span></div><div class="card-body" id="auto-current"></div></section>
+          <section class="card"><div class="card-head"><h2>AI recommendation</h2></div><div class="card-body" id="auto-reco"></div></section>
+          <section class="card"><div class="card-head auto-card-title"><h2>AI EMS summary</h2><span id="auto-summary-badge"></span></div><div class="card-body" id="auto-summary"></div></section>
+        </div>
+        <div class="stack">
+          <section class="card"><div class="card-head"><h2>Automation timeline</h2></div><div class="card-body" id="auto-timeline"></div></section>
+          <section class="card"><div class="card-head auto-card-title"><h2>Automation activity log</h2><span class="small muted">newest at the bottom</span></div><div class="card-body" style="padding:12px"><ul class="log-list" id="auto-log" aria-live="polite"></ul></div></section>
+        </div>
+      </div>
+
+      <section class="card section">
+        <div class="card-head"><h2>Operator control &amp; manual override</h2></div>
+        <div class="card-body" id="auto-override"></div>
+      </section>
+    </section>
+
+    <section class="stat-grid section" aria-label="Summary">
+      <div class="stat-card stat-red">
+        <span class="stat-label">Active emergencies</span>
+        <span class="stat-value" id="stat-active">&ndash;</span>
+        <span class="stat-note">Not yet at hospital</span>
+      </div>
+      <div class="stat-card stat-green">
+        <span class="stat-label">Available ambulances</span>
+        <span class="stat-value" id="stat-ambulances">&ndash;</span>
+        <span class="stat-note">Ready to dispatch</span>
+      </div>
+      <div class="stat-card stat-red">
+        <span class="stat-label">High priority</span>
+        <span class="stat-value" id="stat-high">&ndash;</span>
+        <span class="stat-note">Severity HIGH, active</span>
+      </div>
+      <div class="stat-card stat-amber">
+        <span class="stat-label">Awaiting dispatch</span>
+        <span class="stat-value" id="stat-awaiting">&ndash;</span>
+        <span class="stat-note">No ambulance assigned</span>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="emergencies-title">
+      <div class="section-head">
+        <h2 id="emergencies-title">Emergencies</h2>
+        <div class="filter-bar" id="filter-bar" role="group" aria-label="Filter emergencies">
+          <button type="button" class="filter-btn active" data-filter="ACTIVE">Active</button>
+          <button type="button" class="filter-btn" data-filter="HIGH">High priority</button>
+          <button type="button" class="filter-btn" data-filter="AWAITING">Awaiting dispatch</button>
+          <button type="button" class="filter-btn" data-filter="COMPLETED">Completed</button>
+          <button type="button" class="filter-btn" data-filter="ALL">All</button>
+        </div>
+      </div>
+      <div class="incident-grid" id="incident-list">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="fleet-title">
+      <div class="section-head">
+        <h2 id="fleet-title">Ambulance fleet</h2>
+        <a class="btn btn-outline btn-sm" href="ambulance.html" data-incident-link>Manage ambulances</a>
+      </div>
+      <div class="card table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Ambulance</th><th>Vehicle</th><th>Status</th><th>Assigned incident</th></tr>
+          </thead>
+          <tbody id="fleet-body">
+            <tr><td colspan="4"><div class="loading-line"><span class="spinner"></span> Loading ambulances&hellip;</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/automation.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
 </html>

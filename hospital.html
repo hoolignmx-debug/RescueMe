@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Assignment - EMS Response</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text"><strong>EMS Response</strong><small>Emergency Medical SOS &middot; Member 3</small></span>
+      </a>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+      <nav class="nav" id="main-nav" aria-label="Main navigation">
+        <a class="nav-link" href="index.html">EMS Dashboard</a>
+        <a class="nav-link" href="incident.html" data-incident-link>Incidents</a>
+        <a class="nav-link" href="ambulance.html" data-incident-link>Ambulances</a>
+        <a class="nav-link" href="tracking.html" data-incident-link>Tracking</a>
+        <a class="nav-link" href="notification.html" data-incident-link>Notifications</a>
+        <a class="nav-link active" href="hospital.html" data-incident-link>Hospitals</a>
+      </nav>
+      <span class="mode-pill" id="mode-pill"></span>
+    </div>
+  </header>
+  <div class="demo-banner" id="demo-banner"></div>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1>Hospital Assignment</h1>
+        <p class="page-sub">Normally the best hospital is assigned automatically (see the EMS dashboard). Use this page to choose manually; a manual choice pauses automation for that incident. Member 4's hospital module receives the incoming emergency using the same incident ID.</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-outline" id="refresh-btn" type="button">Refresh</button>
+      </div>
+    </div>
+
+    <div class="context-bar">
+      <label for="incident-select">Incident</label>
+      <select class="select" id="incident-select" aria-label="Choose an incident">
+        <option value="">Loading incidents&hellip;</option>
+      </select>
+    </div>
+
+    <div id="page-alert"></div>
+    <div id="hospital-empty"></div>
+
+    <section id="hospital-view" hidden>
+      <div class="card">
+        <div class="card-body" id="incident-strip"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-head"><h2>Available hospitals</h2></div>
+        <div class="unit-grid" id="hospital-list"></div>
+      </div>
+
+      <div class="section" id="handoff-card" hidden></div>
+    </section>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/hospital.js"></script>
+</body>
+</html>

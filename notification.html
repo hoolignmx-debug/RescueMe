@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Notification - EMS Response</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text"><strong>EMS Response</strong><small>Emergency Medical SOS &middot; Member 3</small></span>
+      </a>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+      <nav class="nav" id="main-nav" aria-label="Main navigation">
+        <a class="nav-link" href="index.html">EMS Dashboard</a>
+        <a class="nav-link" href="incident.html" data-incident-link>Incidents</a>
+        <a class="nav-link" href="ambulance.html" data-incident-link>Ambulances</a>
+        <a class="nav-link" href="tracking.html" data-incident-link>Tracking</a>
+        <a class="nav-link active" href="notification.html" data-incident-link>Notifications</a>
+        <a class="nav-link" href="hospital.html" data-incident-link>Hospitals</a>
+      </nav>
+      <span class="mode-pill" id="mode-pill"></span>
+    </div>
+  </header>
+  <div class="demo-banner" id="demo-banner"></div>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1>Family Notification</h1>
+        <p class="page-sub">Alert authorized emergency contacts. <strong>Simulation only</strong>: no SMS, WhatsApp message or call is actually sent.</p>
+      </div>
+      <div class="page-actions">
+        <span class="sim-label"><span class="dot"></span>DEMO / SIMULATED</span>
+      </div>
+    </div>
+
+    <div class="context-bar">
+      <label for="incident-select">Incident</label>
+      <select class="select" id="incident-select" aria-label="Choose an incident">
+        <option value="">Loading incidents&hellip;</option>
+      </select>
+    </div>
+
+    <div id="page-alert"></div>
+    <div id="notification-empty"></div>
+
+    <section id="notification-view" hidden>
+      <div class="grid-2">
+        <div class="stack">
+          <div class="card">
+            <div class="card-head">
+              <h2>Authorized emergency contacts</h2>
+              <span class="small muted" id="contact-count"></span>
+            </div>
+            <div class="card-body">
+              <ul class="contact-list" id="contact-list"></ul>
+              <p class="hint" style="margin-top:12px">Phone numbers are masked demo placeholders. Only contacts authorized by the patient are listed.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Simulation log</h2></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>Notification time</th><th>Recipient</th><th>Channel</th><th>Message</th><th>Status</th></tr>
+                </thead>
+                <tbody id="log-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="card">
+            <div class="card-head"><h2>Message</h2></div>
+            <div class="card-body">
+              <label for="message-text" class="small muted">Message sent to the selected contacts (no medical details are included)</label>
+              <textarea class="textarea" id="message-text" rows="6" style="margin-top:6px"></textarea>
+              <div class="btn-row" style="margin-top:10px">
+                <button class="btn btn-outline btn-sm" id="reset-message-btn" type="button">Reset message</button>
+              </div>
+              <div class="check-row" id="test-failure-row" style="margin-top:14px" hidden>
+                <input type="checkbox" id="test-failure">
+                <label for="test-failure" class="small">Test failure handling (demo only): make the next notification fail</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Send (simulated)</h2></div>
+            <div class="card-body">
+              <div class="btn-row">
+                <button class="btn btn-primary" id="btn-sms" type="button">SIMULATE SMS</button>
+                <button class="btn btn-primary" id="btn-whatsapp" type="button">SIMULATE WHATSAPP</button>
+                <button class="btn btn-primary" id="btn-voice" type="button">SIMULATE VOICE CALL</button>
+              </div>
+              <div class="sim-results" id="sim-results" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/notification.js"></script>
+</body>
+</html>
