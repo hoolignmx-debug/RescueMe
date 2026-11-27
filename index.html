@@ -1,14 +1,141 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex, nofollow" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>ER Dashboard · Emergency SOS Medical Handoff (Prototype)</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MediRescue AI</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="36" height="36" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="4" class="cx-bg"/><path d="M14 7h6v7h7v6h-7v7h-6v-7H7v-6h7z" class="cx-fg"/></svg>
+      <div><h1>MediRescue AI</h1><p>Emergency victim identification, demo build</p></div>
+    </div>
+    <p class="priv">Runs in this tab. Photos are never uploaded.</p>
+  </header>
+
+  <div class="layout">
+    <aside><ol id="steps" class="steps" aria-label="Scan protocol"></ol></aside>
+
+    <main class="stack">
+      <section class="panel" id="p-hero">
+        <p class="eyebrow">Step 2</p>
+        <h2>Start an emergency scan</h2>
+        <p class="lead">Identify an unconscious person from a face photo. The app builds a face embedding, adds the location and time, and sends an encrypted request to the hospital backend. Follow the nine steps on the left.</p>
+        <button id="sos" class="sos" type="button">Emergency SOS scan</button>
+      </section>
+
+      <section class="panel" id="p-capture" hidden>
+        <p class="eyebrow">Steps 3 and 4</p>
+        <h2>Capture the face</h2>
+        <div id="drop" class="drop">
+          <p><strong>Drop a photo here</strong>, paste with Ctrl+V, or</p>
+          <button id="choose" class="btn primary" type="button">Choose a file</button>
+          <input id="file" type="file" accept="image/*" hidden>
+          <button id="cam" class="btn" type="button">Open camera</button>
+        </div>
+        <div id="camwrap" class="fields" hidden>
+          <video id="video" playsinline muted autoplay style="width:100%;max-height:420px;background:#000;border-radius:4px"></video>
+          <div class="row"><button id="snap" class="btn primary" type="button">Capture face</button><button id="camoff" class="btn ghost" type="button">Close camera</button></div>
+        </div>
+        <p class="hint">Use a clear, front-facing shot in good light. The camera needs http://localhost or https, and your permission.</p>
+        <p id="drop-msg" class="msg" role="status"></p>
+      </section>
+
+      <section class="panel" id="p-quality" hidden>
+        <p class="eyebrow">Step 5</p>
+        <h2>Image quality</h2>
+        <div class="two">
+          <canvas id="photo" role="img" aria-label="The captured photo"></canvas>
+          <div class="fields">
+            <ul id="checks" class="checks"></ul>
+            <p id="q-sum" class="sum" role="status"></p>
+            <div class="row">
+              <button id="retake" class="btn primary" type="button" hidden>Retake photo</button>
+              <button id="useany" class="btn ghost" type="button" hidden>Use anyway</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="p-feat" hidden>
+        <p class="eyebrow">Steps 6 and 7</p>
+        <h2>Features and embedding</h2>
+        <div class="two">
+          <canvas id="fmap" width="256" height="256" role="img" aria-label="Edge direction map over the face crop"></canvas>
+          <div class="fields">
+            <p>The face crop is split into a 4×4 grid. Each cell records which way edges point, in 8 directions. Spokes show the strongest directions in each cell.</p>
+            <h3>Embedding</h3>
+            <div id="bars" class="bars" role="img" aria-label="Bar chart of the 128 embedding values"></div>
+            <p id="e-stats" class="mono"></p>
+          </div>
+        </div>
+        <p class="note"><b>Demo limit</b>This descriptor stands in for a trained face-recognition network. It matches a repeat of the same photo, not the same person in a different photo. Swap in a real model before field use.</p>
+      </section>
+
+      <section class="panel" id="p-loc" hidden>
+        <p class="eyebrow">Step 8</p>
+        <h2>Location and time</h2>
+        <div class="two">
+          <div class="fields">
+            <label for="lat">Latitude<input id="lat" inputmode="decimal" autocomplete="off" placeholder="e.g. 19.0760"></label>
+            <label for="lon">Longitude<input id="lon" inputmode="decimal" autocomplete="off" placeholder="e.g. 72.8777"></label>
+            <div class="row"><button id="geo" class="btn" type="button">Try device location</button></div>
+            <p id="loc-msg" class="msg" role="status"></p>
+          </div>
+          <div class="fields">
+            <p class="label">Timestamp</p>
+            <p id="clock" class="clock"></p>
+            <p id="clock-iso" class="mono"></p>
+            <div class="row"><button id="lock" class="btn primary" type="button">Lock time and location</button></div>
+            <p class="hint">Leave latitude and longitude empty to send without a location.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="p-send" hidden>
+        <p class="eyebrow">Step 9</p>
+        <h2>Send secure request</h2>
+        <p class="lead">The request carries the embedding, quality scores, location and time. The photo stays on this device.</p>
+        <button id="send" class="sos small" type="button">Send secure request</button>
+        <ol id="log" class="log" aria-live="polite"></ol>
+        <div id="result" class="result" hidden></div>
+        <details id="req-d" hidden>
+          <summary>Request JSON, before encryption</summary>
+          <div class="row" style="margin-top:10px"><button id="copy" class="btn ghost sm" type="button">Copy JSON</button></div>
+          <pre id="req"></pre>
+        </details>
+        <div class="row"><button id="again" class="btn" type="button" hidden>Scan another person</button></div>
+      </section>
+
+      <section class="panel" id="p-rec">
+        <p class="eyebrow">Mock backend</p>
+        <h2>Demo patient records</h2>
+        <p class="lead">This stands in for the hospital database. Records stay in this browser. Use made-up details.</p>
+        <div class="two">
+          <form id="enroll-form" class="fields" autocomplete="off">
+            <label for="name">Name<input id="name" required></label>
+            <label for="blood">Blood group
+              <select id="blood"><option>Unknown</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+            </label>
+            <label for="notes">Allergies and notes<textarea id="notes" rows="2"></textarea></label>
+            <label for="contact">Emergency contact<input id="contact" placeholder="Name and number"></label>
+            <div class="row"><button id="enroll" class="btn primary" type="submit" disabled>Enroll current scan</button></div>
+            <p id="enroll-msg" class="msg" role="status">Available once a photo has been processed.</p>
+          </form>
+          <div>
+            <h3>Enrolled (<span id="rec-n">0</span>)</h3>
+            <ul id="recs" class="recs"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
 </html>
