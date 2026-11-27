@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic-settings
+python-multipart
+PyJWT
+bcrypt
+numpy
+
+# For running the automated tests
+pytest
+httpx
+
+# Optional: only needed if Member 1 sends face IMAGES instead of embeddings
+# deepface
+# tf-keras

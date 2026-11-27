@@ -1,158 +1,100 @@
-# Hospital ER Dashboard & Medical Handoff Module (Member 4)
+# MediRescue AI: Central Backend (Member 2)
 
-Part of **Emergency SOS Face Identification & Medical Handoff System** (college prototype).
-This module covers steps 4–8 of the flow: receive the incoming patient → view the authorized emergency summary → prepare the ER → record the medical handoff → update treatment status.
+FastAPI + SQLAlchemy + SQLite. This is the hub that Members 1, 3 and 4 all call.
+**All patient data is synthetic. Notifications are mocked.**
 
-> **Prototype only.** All patients, staff, ambulances and blood-bank stock are **synthetic DEMO DATA**. Never connect it to real medical or dispatch systems without authorization.
-
-## Stack
-
-React 19 · Vite · Tailwind CSS 4 · React Router · Lucide icons. Plain JavaScript, no extra runtime dependencies.
-It is a **frontend module only**: it talks to Member 2's central backend over REST/JSON and creates no backend of its own.
-(No stack was found in the repository when this was built, so the brief's default stack was used. If the team picked something else, the `services/` layer is the only part that touches HTTP.)
-
-## Run it
-
-Requires Node 20+.
+## 1. Run it
 
 ```bash
-cd hospital-dashboard
-npm install
-cp .env.example .env        # optional; defaults already run in demo mode
-npm run dev                 # http://localhost:5174
-npm test                    # service-layer + workflow tests, no install needed
-npm run build               # production bundle in dist/
+python -m venv venv
+venv\Scripts\activate            # Windows   (Mac/Linux: source venv/bin/activate)
+pip install -r requirements.txt
+uvicorn main:app --reload
 ```
 
-### Demo mode vs. real backend
+- API docs: http://127.0.0.1:8000/docs → click **Authorize**, log in as `ems1` / `ems123`
+- The database is created and filled with demo data automatically on first start.
+- Start fresh any time: `python seed.py --reset`
 
-| `.env` | Behaviour |
-|--------|-----------|
-| `VITE_USE_MOCK=true` (default) | Built-in simulated backend, 5 synthetic patients stored in `localStorage`. A magenta **DEMO DATA** banner is always shown. |
-| `VITE_USE_MOCK=false` | Calls `VITE_API_BASE_URL` (default `http://localhost:8000`). **No silent fallback** to demo data: if the server is down you see an error. |
+Let teammates on the same Wi-Fi connect: `uvicorn main:app --host 0.0.0.0 --port 8000`,
+then they use `http://<your-laptop-IP>:8000`. For a public URL: `ngrok http 8000`.
 
-Other settings: `VITE_REQUEST_TIMEOUT_MS`, `VITE_POLL_INTERVAL_MS`, `VITE_HOSPITAL_NAME`. Everything `VITE_*` is public in the browser bundle, so never put secrets there.
+## 2. Test it
 
-### Demo accounts (synthetic, demo mode only)
+```bash
+pytest -v
+```
+Runs the full demo script (SOS → hospital handoff → closed) plus every item on the testing checklist
+(no GPS, poor scan, no match, ambiguous match, unauthorized user, expired/revoked token, duplicate request,
+notification failure, invalid status jump, audit logging).
 
-| Role | Staff ID | Password |
-|------|----------|----------|
-| ER Doctor | `DOC-001` | `Demo-Doctor-1` |
-| Paramedic | `PARA-001` | `Demo-Paramedic-1` |
-| Hospital Administrator | `ADM-001` | `Demo-Admin-1` |
+**Postman:** import `docs/MediRescue.postman_collection.json`, run folder **1. Log in**, then **2. Full demo flow**.
 
-They exist only in the demo backend (`src/services/backends/mock/demoData.js`) and are shown on the login page only when demo mode is on.
+## 3. Demo logins
 
-**Demo tools** (banner → "Demo tools"): reset demo data, simulate a backend outage, expire the current token.
+| user | password | role |
+|---|---|---|
+| field1 | field123 | field_responder (Member 1) |
+| ems1 | ems123 | ems (Member 3) |
+| doctor1 | doctor123 | hospital, HOSP-001 (Member 4) |
+| nurse2 | nurse123 | hospital, HOSP-002 |
+| admin | admin123 | admin |
 
-## Pages
-
-| # | Route | Page | Roles |
-|---|-------|------|-------|
-| 1 | `/login` | Staff login | all |
-| 2 | `/` | Dashboard: summary cards, trauma alerts, recently received, ambulance arrivals, activity, status overview | all |
-| 3 | `/incidents` | Incoming trauma queue: search by ID/name, filter by status, sort by ETA or priority, refresh | all |
-| 4 | `/patients/:id` | Patient emergency profile (identity, medical, incident, contacts) | doctor (full), paramedic (limited) |
-| 5 | `/tracking/:id` | Ambulance tracking & ETA, map, labelled simulation mode | all |
-| 6 | `/handoff/:id` | Medical handoff: paramedic form, doctor assessment, Accept Patient, treatment notes, record history | doctor, paramedic |
-| 7 | `/status/:id` | Status management with permitted-transition buttons and change history | doctor, paramedic (admin: view) |
-| 8 | `/timeline/:id` | Visual incident timeline from backend timestamps | all |
-| 9 | `/blood-bank/:id` | Blood bank preparation indicator (informational) | doctor |
-| 10 | `/audit` | Audit & history, access history, filters | **admin only** |
-
-Pages 4–9 without an `:id` show an incident picker. Every incident is keyed by the shared `incident_id`; the module never creates incidents.
-
-### Dashboard card definitions
-
-* **Total Incoming** – status `IDENTITY_VERIFIED`, `EMS_NOTIFIED`, `AMBULANCE_ASSIGNED` or `EN_ROUTE`
-* **Arrived** – `ARRIVED` · **In ER** – `IN_ER` · **Under Treatment** – `UNDER_TREATMENT`
-* **Critical** – severity `CRITICAL`/`HIGH` and not yet `STABLE`/`OTHER_OUTCOME`/`CLOSED`
-
-### Status workflow
-
-`EN_ROUTE → ARRIVED → IN_ER → UNDER_TREATMENT → STABLE | OTHER_OUTCOME → CLOSED`
-Earlier stages belong to the EMS module (Member 3). Invalid transitions are blocked in the UI and again by the backend. Each change records incident ID, previous/new status, staff ID, timestamp and notes. `OTHER_OUTCOME` requires a note.
-
-## Safety & security design
-
-* **Role-based access** (`src/utils/permissions.js`): menu items, routes and buttons follow the role. These are UX only; **the backend must enforce the same rules** (see `docs/API_INTEGRATION.md`).
-* **Unverified identity is never treated as confirmed**: name, age and medical details are shown only when `identity_status === 'VERIFIED'`; otherwise "Unconfirmed".
-* **Missing data is shown as missing** ("Not available", "Restricted for your role"), never invented. `null` = unknown, `[]` = recorded as none.
-* **Blood group** is always marked *Unverified* unless the backend says otherwise. The blood bank page is an informational aid and states that typing, compatibility testing and hospital protocols must be followed. Nothing is auto-selected or issued.
-* **No treatment recommendations** anywhere: the handoff form only records information.
-* **Handoffs**: required-field validation, a confirmation dialog before saving, a per-attempt idempotency key (a retry never duplicates a note), duplicate detection, append-only history. Staff ID and timestamps are set by the backend from the token; doctor ID/name are read-only from the session.
-* **Sessions**: short-lived token held in memory + `sessionStorage`, auto sign-out at expiry and on any `401`, best-effort server-side revocation on logout. A cookie-based `httpOnly` session is recommended for production (see integration doc).
-* **Audit**: profile access, handoffs, notes, status changes, closures and denied attempts are logged (by the backend; by the demo backend in demo mode).
-* **Maps / GPS**: positions without `source: "GPS"` are labelled **SIMULATED**. The optional movement simulation runs only in your browser and is never stored or sent.
-* **Real-time**: controlled polling (default 15 s, paused while the tab is hidden, plus manual Refresh). Swap in SSE/WebSocket in `src/hooks/useIncidents.js` if Member 2 adds one.
-
-### Error handling coverage
-
-Backend unavailable · invalid login · expired token · unauthorized profile access · missing patient data · no ambulance tracking · no ETA · failed handoff submission · invalid status transition · duplicate medical notes · network timeout · missing blood group. A failed background refresh keeps the last data on screen with a "showing last data" banner.
-
-## Project structure
+## 4. Project layout
 
 ```
-src/
-  App.jsx, main.jsx              router + providers, permission-guarded routes
-  components/                    Sidebar, Navbar, StatCard, PatientTable, StatusBadge, Timeline,
-                                 ConfirmDialog, DataStates, Field, TrackingMap, DemoBanner, …
-  pages/                         the 10 pages above
-  services/
-    api.js                       HTTP client (base URL, bearer token, timeout, error mapping)
-    backend.js                   real vs. demo switch (VITE_USE_MOCK)
-    backends/realBackend.js      Member 2's REST endpoints
-    backends/mock/               clearly labelled synthetic backend + seed data
-    incidentService.js, hospitalService.js, authService.js, normalize.js
-  context/                       AuthContext, ToastContext
-  hooks/                         useAsyncData (polling, stale-data handling), useIncidents
-  utils/                         statuses, permissions, validators, format
-tests/                           node:test suites
-docs/API_INTEGRATION.md          exact endpoints/JSON needed from Member 2 (and Member 3 fields)
+backend/
+├── main.py                  app, CORS, routers, auto-seed
+├── config.py / .env         all settings (thresholds, token lifetimes, CORS…)
+├── constants.py             roles, statuses, allowed transitions (the shared contract)
+├── database.py              DB connection
+├── models/                  8 tables from the spec + staff, notification_logs, incident_access_tokens
+├── schemas.py               request validation
+├── security.py              login tokens, incident tokens, role checks
+├── seed.py                  synthetic demo data
+├── routes/
+│   ├── auth.py              login, incident tokens, audit logs
+│   ├── incidents.py         create, list, scan, review, status, notes, timeline
+│   ├── profiles.py          role-filtered emergency profile
+│   ├── dispatch.py          dispatch, tracking, ambulances, family notifications
+│   ├── hospital.py          ER queue, blood bank, ER status
+│   └── demo.py              fake scans for testing without a face model
+├── services/
+│   ├── matching_service.py  face matching policy
+│   ├── face_embedder.py     optional image → embedding (DeepFace)
+│   ├── notification_service.py  mock SMS + failure handling
+│   ├── incident_service.py  status changes, scoping
+│   ├── audit_service.py
+│   └── geo.py               distance / ETA
+├── docs/API.md              ← give this to your teammates
+└── tests/test_end_to_end.py
 ```
 
-## Demo data (5 synthetic patients)
+## 5. How matching works (for the viva)
 
-| Incident | Scenario |
-|----------|----------|
-| `INC-2026-0001` | Verified · O+ (unverified) · Penicillin allergy · Asthma · ambulance **en route** |
-| `INC-2026-0002` | Verified · B+ · no known allergies · Diabetes · **arrived** |
-| `INC-2026-0003` | Identity **pending review** · blood group unknown · no confirmed profile · ambulance assigned |
-| `INC-2026-0004` | Verified · AB+ · **pacemaker** · **in ER** |
-| `INC-2026-0005` | Verified · A+ · no known allergies · **under treatment** |
+1. The scan becomes a 128-number **embedding** (on the phone, or on the server in image mode).
+2. It is compared (cosine similarity) only against users who **gave consent**.
+3. Policy, never just "highest score wins":
+   - score ≥ 0.80 **and** clearly ahead of the runner-up (≥ 0.05) → `IDENTITY_VERIFIED`
+   - score ≥ 0.80 but runner-up too close → `AMBIGUOUS` → `MATCH_REVIEW`
+   - 0.60–0.80 → `NEEDS_REVIEW` → `MATCH_REVIEW`
+   - < 0.60 → `NO_MATCH` → `MATCH_REVIEW` (treated as unidentified)
+4. In review, a human compares candidates (name/age/gender only, no medical data) and confirms or rejects.
+5. Dispatch never waits for identity.
 
-## Testing
+Thresholds are in `.env`.
 
-### Automated (`npm test`, 16 tests)
+## 6. Image mode (only if Member 1 sends photos)
 
-Run against the demo backend through the real service layer:
-full workflow (login → dashboard data → profile → tracking → arrive → IN_ER → paramedic handoff → doctor acceptance → notes → UNDER_TREATMENT → STABLE → CLOSED → audit), unauthorized access and admin data minimisation, expired/revoked tokens, invalid login and malformed responses, invalid transitions (client and server), note ordering/duplicates/idempotent retries, missing and unverified data, backend outage, seed scenarios, permissions and validators.
+```bash
+pip install deepface tf-keras
+```
+Then `scan_data` can be a base64 JPEG. Demo users have random reference embeddings, so to match a real face,
+enrol a teammate's photo (with their consent) as a demo user: `POST /api/admin/users/USR-001/enroll-face`
+as admin with `{"scan_data": "<base64 photo>"}`. Photos are never stored.
 
-### Manual walkthrough (≈5 min)
+## 7. Before hosting
 
-1. Open the app, sign in as **ER Doctor** → Dashboard shows 5 patients and the cards.
-2. **VIEW PATIENT** on `INC-2026-0001` → blood group shows *Unverified*; open **Ambulance Tracking** and try *Start simulated movement* (labelled SIMULATED).
-3. Sign out, sign in as **Paramedic** → `INC-2026-0001` → *Status*: **Mark as Arrived**, then **Mark as In ER** (confirm dialogs).
-4. *Medical Handoff*: submit empty (validation errors) → fill in → **Save Handoff** → confirm. Check the record appears under *Previous handoff records*.
-5. Sign in as **Doctor** → *Handoff*: **Accept Patient**, add a treatment note (try the same text twice → duplicate error).
-6. *Status*: **Under treatment** → **Stable** → **Closed**. Check the *Timeline*.
-7. Sign in as **Admin** → *Audit & History* shows every action; clinical pages are not available to this role.
-8. Demo tools: **Simulate backend outage** (error panels, stale-data banner), **Expire my session token** (automatic sign-out), **Reset demo data**.
-9. Open `INC-2026-0003` → identity "Pending review", name/medical shown as *Unconfirmed*, blood bank says no blood group on record.
-
-## Verification status — please read
-
-This build was produced in an environment **without network access to the npm registry**, so `npm install`, `vite dev` and `vite build` were **not run** there. What was verified instead:
-
-* the 16 `node:test` tests pass;
-* every page and `App.jsx` compile with esbuild and render without errors (server-side render with stubbed router/icon packages), including data-driven renders of the handoff, status, timeline, blood-bank and audit pages for all five incidents and all three roles (37/37 checks).
-
-Not yet verified: real-browser visuals/responsiveness, the map in a live browser (`TrackingMap.jsx` is a dependency-free SVG **schematic** showing relative positions, with no street tiles; swap in Leaflet or Google Maps later, the props stay the same), and any call to Member 2's real backend. Please run `npm install && npm run dev` once and click through the manual walkthrough. Screenshots are not included for the same reason.
-
-## Assumptions and missing integrations
-
-* Endpoints 6–11 in `docs/API_INTEGRATION.md` (login, logout, list notes, timeline, blood bank, audit) are **not** in the agreed list; they are written as a proposed contract and report "not supported by the backend yet" if absent.
-* Field names are adapted in one place (`src/services/normalize.js`) once Member 2's real schema is known.
-* Tracking field names (`location.source`, `eta_minutes`, hospital coordinates) need confirmation from Member 3.
-* "Manage hospital staff accounts" (administrator role in the brief) is **not implemented**: it needs account-management endpoints that do not exist in the agreed contract.
-* Organ-donor preference is shown only to roles the backend releases it to (doctor, in demo mode).
+- Set a long random `JWT_SECRET` in `.env`
+- Set `CORS_ORIGINS` to your teammates' frontend URLs
+- Set `DEMO_MODE=false` if demo helpers should be hidden
